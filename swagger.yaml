@@ -1,0 +1,199 @@
+openapi: '3.0.2'
+info:
+  title: Clinic appointment managment system API
+  version: '0.1'
+servers:
+  - url: https://localhost:9090
+paths:
+  /appointments:
+    get:
+      tags:
+        - Appointment
+      description: Query appointment by date, if the date query parameter is not specified, the appointment(s) of today should be returned as result.
+      parameters:
+        - name: date
+          in: query
+          description: Query appointment by date
+          example: 2023-02-15
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: 
+                type: array
+                items:
+                  $ref: '#/components/schemas/appointment'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        '500':
+          description: Server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+      security:
+        - default_auth:
+            - appointment.read
+
+  /appointment/{id}:
+    get:
+      tags:
+        - Appointment
+      description: Get appointment by ID
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: appointment ID
+          example: 149152f6-d231-4883-b4e6-972d99b24ca6
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/appointment'                  
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        '500':
+          description: Server internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+      security:
+        - default_auth:
+            - appointment.read
+components:
+  schemas:
+    appointment:
+      required:
+        - id
+        - start
+        - end
+      type: object
+      properties:
+        id:
+          type: string
+          description: appointment ID
+          example: 149152f6-d231-4883-b4e6-972d99b24ca6
+        start:
+          type: string
+          format: date-time
+          description: Appointment start date time
+        end:
+          type: string
+          format: date-time
+          description: Appointment end date time
+        subject:
+          type: string
+          format: text
+          description: appointment subject
+        provider:
+          $ref: '#/components/schemas/provider'
+        patient:
+          $ref: '#/components/schemas/patient'
+    provider:
+      required:
+        - id
+        - name
+        - gender
+      type: object
+      properties:
+        id:
+          type: string
+          description: appointment ID
+          example: 149152f6-d231-4883-b4e6-972d99b24ca6
+        name:
+          type: string
+          description: provider's name, [last name, first name]
+          example: Bond, James
+        gender:
+          type: string
+          enum: [male, female, unknown]
+    patient:
+      required:
+        - id
+        - name
+      type: object
+      properties:
+        id:
+          type: string
+          description: appointment ID
+          example: 149152f6-d231-4883-b4e6-972d99b24ca6
+        name:
+          type: string
+          description: provider's name, [last name, first name]
+          example: Bond, James
+        gender:
+          type: string
+          enum: [male, female, unknown]
+        age:
+          type: integer
+          description: patient's age
+          example: 18
+        identifiers:
+          type: array
+          description: patient's identifiers
+          items:
+            $ref: '#/components/schemas/identifier'
+
+    identifier:
+      required:
+        - system
+        - value
+      type: object
+      properties:
+        system: 
+          type: string
+          description: identifier system
+          example: ssn
+        value:
+          type: string
+          example: 010101-0101
+
+    error:
+      required:
+        - error
+        - message
+      type: object
+      properties:
+        error:
+          type: string
+          description: error code
+          example: invalid_request
+        message:
+          type: string
+          description: error details
+          example: The request is in the invalid format
+  
+  securitySchemes:
+    default_auth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://example.com/api/oauth/dialog
+          tokenUrl: https://example.com/api/oauth/token
+          scopes:
+            appointments.read: read appointments 
